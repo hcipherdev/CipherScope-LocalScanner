@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>CipherScope Local Scanner Report</title>
+    <style>{{ css | safe }}</style>
+  </head>
+  <body>
+    <main class="report-shell local-report-shell">
+      <header class="report-head">
+        <span class="brand-link">CipherScope</span>
+        <div>
+          <p class="eyebrow">Local PQC migration report</p>
+          <h1>CipherScope Local Scanner</h1>
+        </div>
+      </header>
+
+      <section class="status-panel">
+        <div>
+          <span>Migration Priority</span>
+          <strong>{{ report.score }}/100</strong>
+          {% if report.score_raw_points and report.score_raw_points > report.score %}
+            <small>capped from {{ report.score_raw_points }} raw points</small>
+          {% endif %}
+        </div>
+        <div>
+          <span>Findings</span>
+          <strong>{{ report.findings | length }}</strong>
+        </div>
+        <div>
+          <span>Targets</span>
+          <strong>{{ report.targets | length }}</strong>
+        </div>
+        <div>
+          <span>Local folders</span>
+          <strong>{{ report.paths | length }}</strong>
+        </div>
+      </section>
+
+      <section class="local-scope">
+        <p class="eyebrow">Scan scope</p>
+        <h2>{{ scan_scope.summary }}</h2>
+        <div class="local-scope-grid">
+          {% for item in scan_scope.scope_items %}
+            <div class="local-scope-card">
+              <span>{{ item.label }}</span>
+              <strong>{{ item.value }}</strong>
+            </div>
+          {% endfor %}
+        </div>
+        <details class="local-scope-details"{% if pdf_profile %} open{% endif %}>
+          <summary>Scan inputs</summary>
+          <div class="local-scope-detail-grid">
+            {% if scan_scope.has_docker %}
+              <div>
+                <h3>Docker containers</h3>
+                <p>
+                  Running containers only. Stopped containers are not started or scanned.
+                </p>
+              </div>
+            {% endif %}
+            {% if scan_scope.targets %}
+              <div>
+                <h3>TLS services scanned</h3>
+                <ul>
+                  {% for target in scan_scope.targets %}
+                    <li>{{ target }}</li>
+                  {% endfor %}
+                </ul>
+              </div>
+            {% endif %}
+            {% if scan_scope.locations %}
+              <div>
+                <h3>Local files and folders scanned</h3>
+                <ul>
+                  {% for location in scan_scope.locations %}
+                    <li>{{ location }}</li>
+                  {% endfor %}
+                </ul>
+              </div>
+            {% endif %}
+          </div>
+        </details>
+      </section>
+
+      <p class="summary">{{ report.score_summary }}</p>
+
+      <section class="finding-section">
+        <p class="eyebrow">Executive summary</p>
+        <h2>Local cryptographic migration inventory.</h2>
+        <div class="local-counts">
+          <div>
+            <h3>Findings by status</h3>
+            <ul>
+              {% for status, count in report.counts_by_status.items() %}
+                <li>{{ status }}: {{ count }}</li>
+              {% else %}
+                <li>None</li>
+              {% endfor %}
+            </ul>
+          </div>
+          <div>
+            <h3>Findings by severity</h3>
+            <ul>
+              {% for severity, count in report.counts_by_severity.items() %}
+                <li>{{ severity }}: {{ count }}</li>
+              {% else %}
+                <li>None</li>
+              {% endfor %}
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section class="finding-section">
+        <p class="eyebrow">Remediation</p>
+        <h2>Top actions.</h2>
+        <ul class="local-actions">
+          {% for action in report.top_remediation_actions %}
+            <li>{{ action }}</li>
+          {% else %}
+            <li>Continue expanding the local cryptographic inventory.</li>
+          {% endfor %}
+        </ul>
+      </section>
+
+      <section class="finding-section">
+        <p class="eyebrow">Detailed findings</p>
+        <h2>Evidence table.</h2>
+        {% for group in finding_groups %}
+          <details class="local-finding-group"{% if pdf_profile %} open{% endif %}>
+            <summary class="local-finding-group__summary">
+              <div>
+                <p class="severity">Asset group</p>
+                <h3>{{ group.name }}</h3>
+                <span class="local-group-count">{{ group.total }} findings</span>
+              </div>
+              <div class="local-status-summary">
+                {% for summary in group.status_summaries %}
+                  <span class="local-status-pill">{{ summary }}</span>
+                {% endfor %}
+              </div>
+            </summary>
+            {% for finding in group.findings %}
+              <article class="finding finding--{{ finding.severity }}">
+                <div>
+                  <p class="severity">{{ finding.severity }}</p>
+                  <h3>{{ finding.category }}</h3>
+                </div>
+                <div>
+                  <p>{{ finding.status_line }}</p>
+                  <p class="recommendation">{{ finding.recommendation }}</p>
+                  <dl>
+                    <dt>ID</dt>
+                    <dd>{{ finding.id }}</dd>
+                    <dt>Category</dt>
+                    <dd>{{ finding.category }}</dd>
+                    <dt>Location</dt>
+                    <dd>{{ finding.location }}</dd>
+                    {% if finding.key_size %}
+                      <dt>Key size</dt>
+                      <dd>{{ finding.key_size }}</dd>
+                    {% endif %}
+                    {% for label, value in finding.evidence.items() %}
+                      <dt>{{ label }}</dt>
+                      <dd>{{ value }}</dd>
+                    {% endfor %}
+                  </dl>
+                </div>
+              </article>
+            {% endfor %}
+          </details>
+        {% else %}
+          <p>No findings in the selected scan scope.</p>
+        {% endfor %}
+      </section>
+
+      <section class="finding-section">
+        <p class="eyebrow">Why this score?</p>
+        <details class="local-score-factors"{% if pdf_profile %} open{% endif %}>
+          <summary class="local-score-factors__summary">
+            <div>
+              <p class="severity">Score detail</p>
+              <h2>Score factors.</h2>
+              <span class="local-group-count">{{ report.score_factors | length }} factors</span>
+            </div>
+            <p class="summary">
+              {% if pdf_profile %}
+                Exact score adjustments used in this report.
+              {% else %}
+                Open this section to see the exact score adjustments.
+              {% endif %}
+            </p>
+          </summary>
+          {% for factor in report.score_factors %}
+            <article class="finding finding--info">
+              <div>
+                <p class="severity">{{ "%+d" | format(factor.points) }}</p>
+                <h3>{{ factor.label }}</h3>
+              </div>
+              <p>{{ factor.reason }}</p>
+            </article>
+        {% else %}
+            <p>No score-changing factors were detected.</p>
+          {% endfor %}
+        </details>
+      </section>
+
+      <section class="finding-section">
+        <p class="eyebrow">Technical appendix</p>
+        <h2>Scan metadata.</h2>
+        <dl>
+          <dt>Generated</dt>
+          <dd>{{ report.generated_at.isoformat() }}</dd>
+          {% for key, value in report.technical_appendix.items() %}
+            <dt>{{ key }}</dt>
+            <dd>{{ value }}</dd>
+          {% endfor %}
+        </dl>
+      </section>
+    </main>
+  </body>
+</html>
