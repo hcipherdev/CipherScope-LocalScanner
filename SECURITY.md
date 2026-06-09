@@ -6,7 +6,7 @@ If you discover a security vulnerability in CipherScope Local Scanner, please re
 
 **Do not open a public GitHub issue for security vulnerabilities.**
 
-Instead, email: hcipherdev@proton.me
+Instead, email: support@hybridcipher.com
 
 Include:
 - Description of the vulnerability
